@@ -1,0 +1,4 @@
+.nettrace_cache.json
+.workbuddy/
+*.pyc
+__pycache__/
