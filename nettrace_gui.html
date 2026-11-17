@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>行迹 · Traceroute 路径解析台</title>
+<title>行迹 · 网络路径探测台</title>
 <script type="text/javascript">
   window._TMapSecurityConfig = {
     serviceHost: 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__',
@@ -12,199 +12,240 @@
 <script src="https://map.qq.com/api/gljs?v=1.exp"></script>
 <style>
 :root{
-  --paper:        oklch(97.5% 0.006 75);
-  --paper-2:      oklch(95.5% 0.008 75);
-  --surface:      oklch(99% 0.004 75);
-  --ink:          oklch(24% 0.012 55);
-  --ink-soft:     oklch(43% 0.012 55);
-  --ink-faint:    oklch(60% 0.012 55);
-  --rule:         oklch(86% 0.01 70);
-  --rule-strong:  oklch(76% 0.012 70);
-  --accent:       oklch(50% 0.135 30);
-  --accent-soft:  oklch(94% 0.03 30);
-  --accent-ink:   oklch(42% 0.12 30);
-  --teal:         oklch(46% 0.07 195);
-  --teal-soft:    oklch(94% 0.025 195);
-  --warn:         oklch(52% 0.12 55);
-  --serif: Georgia,"Iowan Old Style","Songti SC","SimSun","Noto Serif CJK SC",serif;
+  --bg:        oklch(17% 0.014 250);
+  --panel:     oklch(21% 0.016 250);
+  --panel-2:   oklch(24% 0.016 250);
+  --line:      oklch(31% 0.018 250);
+  --line-soft: oklch(27% 0.016 250);
+  --text:      oklch(93% 0.006 250);
+  --text-2:    oklch(74% 0.012 250);
+  --text-3:    oklch(58% 0.014 250);
+  --accent:    oklch(68% 0.16 32);
+  --accent-dim:oklch(40% 0.10 32);
+  --teal:      oklch(72% 0.11 178);
+  --teal-dim:  oklch(38% 0.07 178);
+  --amber:     oklch(78% 0.13 78);
+  --red:       oklch(66% 0.19 22);
+  --red-dim:   oklch(38% 0.11 22);
+  --serif: Georgia,"Songti SC","Noto Serif CJK SC",serif;
+  --mono: ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
   --sans: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  --mono: ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",monospace;
-  --sp-1:.35rem; --sp-2:.6rem; --sp-3:1rem; --sp-4:1.5rem; --sp-5:2.25rem; --sp-6:3.5rem;
 }
 *{box-sizing:border-box}
-html{font-size:16px}
-body{
-  margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--sans);font-size:1rem;line-height:1.65;
-  -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;
-}
-::selection{background:var(--accent-soft);color:var(--accent-ink)}
+html{font-size:15px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
+.app{max-width:1500px;margin:0 auto;padding:1.5rem clamp(.8rem,2vw,1.6rem) 3rem}
 
-.sheet{max-width:1240px;margin:0 auto;padding:clamp(1.5rem,4vw,3.5rem) clamp(1.1rem,4vw,3rem) 5rem}
+.topbar{display:flex;align-items:center;gap:1rem;border-bottom:1px solid var(--line);padding-bottom:1rem;margin-bottom:1.4rem}
+.brand{display:flex;align-items:baseline;gap:.7rem}
+.brand h1{font-family:var(--serif);font-weight:400;font-size:1.7rem;margin:0;letter-spacing:-.01em}
+.brand .sub{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+.svc{margin-left:auto;display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--text-2);font-family:var(--mono)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--text-3);flex:none}
+.dot.on{background:var(--teal);box-shadow:0 0 0 3px var(--teal-dim)}
+.dot.off{background:var(--red)}
+.svc button{font:inherit;color:var(--text-2);background:var(--panel);border:1px solid var(--line);padding:.3rem .6rem;border-radius:4px;cursor:pointer}
+.svc button:hover{border-color:var(--text-3)}
 
-.masthead{border-bottom:1px solid var(--ink);padding-bottom:var(--sp-3);margin-bottom:var(--sp-4)}
-.masthead .kicker{font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);font-weight:600}
-.masthead h1{font-family:var(--serif);font-weight:400;font-size:clamp(2.1rem,5vw,3.2rem);line-height:1.05;margin:.4rem 0 .3rem;letter-spacing:-.01em}
-.masthead .dek{font-family:var(--serif);font-style:italic;color:var(--ink-soft);font-size:1.02rem;margin:0;max-width:60ch}
+.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:1.4rem;align-items:start}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}}
 
-.cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(1.5rem,4vw,3.5rem);align-items:start}
-@media(max-width:900px){.cols{grid-template-columns:1fr;gap:var(--sp-5)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1.1rem}
+.panel h2{font-family:var(--serif);font-weight:400;font-size:1rem;margin:0 0 .9rem;display:flex;align-items:center;gap:.55rem;color:var(--text)}
+.panel h2 .n{font-family:var(--mono);font-size:.7rem;color:var(--accent);border:1px solid var(--accent-dim);padding:.05rem .35rem;border-radius:3px}
 
-.sec-num{font-family:var(--serif);font-style:italic;color:var(--accent);font-size:1rem;margin-right:.5rem}
-.sec-h{font-family:var(--serif);font-weight:400;font-size:1.35rem;margin:0 0 var(--sp-3);display:flex;align-items:baseline;border-bottom:1px solid var(--rule);padding-bottom:.5rem}
-
-.seg{display:inline-flex;border:1px solid var(--rule-strong);margin-bottom:var(--sp-3)}
-.seg button{
-  appearance:none;border:0;background:transparent;color:var(--ink-soft);
-  font-family:var(--sans);font-size:.85rem;padding:.5rem .95rem;cursor:pointer;transition:background .18s ease,color .18s ease;
-}
-.seg button+button{border-left:1px solid var(--rule-strong)}
-.seg button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
-.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-.panel[hidden]{display:none}
-label.fl{display:block;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.5rem}
-textarea,.txt{
-  width:100%;background:var(--surface);border:1px solid var(--rule-strong);color:var(--ink);
-  font-family:var(--mono);font-size:.8rem;line-height:1.55;padding:.85rem 1rem;border-radius:2px;resize:vertical;
-}
-textarea{min-height:230px}
-textarea:focus,.txt:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-textarea::placeholder{color:var(--ink-faint);opacity:1}
-.row{display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap;margin-top:var(--sp-2)}
-.btn{
-  appearance:none;font-family:var(--sans);font-size:.88rem;cursor:pointer;border-radius:2px;
-  padding:.6rem 1.15rem;transition:background .18s ease,transform .18s ease,color .18s ease,border-color .18s ease;
-}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn-primary{background:var(--accent);color:#fff;border:1px solid var(--accent)}
-.btn-primary:hover{background:var(--accent-ink);transform:translateY(-1px)}
-.btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--rule-strong)}
-.btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
-.hint{font-size:.78rem;color:var(--ink-faint)}
-.hint code{font-family:var(--mono);background:var(--paper-2);padding:.05rem .3rem;border-radius:2px}
-.cmdout{margin-top:var(--sp-2);background:var(--ink);color:oklch(92% 0.01 75);font-family:var(--mono);font-size:.78rem;padding:.8rem 1rem;border-radius:2px;display:flex;justify-content:space-between;gap:1rem;align-items:center}
-.cmdout button{appearance:none;border:0;background:transparent;color:var(--accent-soft);cursor:pointer;font-size:.75rem;letter-spacing:.05em;white-space:nowrap}
-
-.stats{display:flex;gap:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);margin-bottom:var(--sp-4)}
-.stat{flex:1;padding:var(--sp-3) var(--sp-2)}
-.stat+.stat{border-left:1px solid var(--rule)}
-.stat .k{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
-.stat .v{font-family:var(--serif);font-size:1.6rem;line-height:1.2;margin-top:.2rem}
-.stat .v.ok{color:var(--teal)}
-.stat .v.no{color:var(--accent)}
-
-#map{width:100%;height:360px;background:var(--paper-2);border:1px solid var(--rule)}
-.map-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-faint);font-family:var(--serif);font-style:italic;text-align:center;padding:2rem}
-.map-note{font-size:.74rem;color:var(--ink-faint);margin-top:.45rem}
-
-.notes{list-style:none;margin:0 0 var(--sp-4);padding:0}
-.notes li{font-size:.84rem;padding:.5rem 0 .5rem .9rem;border-left:2px solid var(--rule);margin-bottom:.35rem;background:transparent}
-.notes li.info{border-color:var(--rule-strong);color:var(--ink-soft)}
-.notes li.warn{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);padding-left:.9rem}
-.notes li.ok{border-color:var(--teal);color:var(--teal);background:var(--teal-soft);padding-left:.9rem}
-
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-thead th{text-align:left;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;padding:.5rem .55rem;border-bottom:1px solid var(--ink)}
-tbody td{padding:.5rem .55rem;border-bottom:1px solid var(--rule);vertical-align:top}
-tbody tr:hover{background:var(--paper-2)}
-td.hop{font-family:var(--serif);font-style:italic;color:var(--accent);width:2.2rem}
-td.ip{font-family:var(--mono);font-size:.78rem;word-break:break-all;max-width:22rem}
-td.ms{font-family:var(--mono);color:var(--ink-soft);white-space:nowrap}
-.tag{display:inline-block;font-size:.7rem;padding:.05rem .45rem;border-radius:2px}
-.tag.public{background:var(--teal-soft);color:var(--teal)}
-.tag.local{background:var(--paper-2);color:var(--ink-soft)}
-.sub{font-size:.72rem;color:var(--ink-faint);margin-top:.15rem}
-
-.status{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);min-height:1.2em;margin-top:var(--sp-2)}
+.seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:.9rem}
+.seg button{flex:1;font:inherit;font-size:.78rem;padding:.45rem;background:transparent;color:var(--text-2);border:0;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-selected=true]{background:var(--accent-dim);color:var(--text)}
+label{display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:.7rem 0 .35rem}
+.inp,textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:.8rem;padding:.6rem .7rem;border-radius:4px;resize:vertical}
+textarea{min-height:150px;line-height:1.5}
+.inp:focus,textarea:focus{outline:none;border-color:var(--accent)}
+.inp::placeholder,textarea::placeholder{color:var(--text-3)}
+.opts{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
+.opts select{font-family:var(--mono);font-size:.76rem;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:.35rem .5rem}
+.btn{font:inherit;font-size:.82rem;padding:.55rem .9rem;border-radius:5px;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);color:var(--text);transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--text-3)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:oklch(15% 0 0);font-weight:600}
+.btn-primary:hover{background:var(--accent);filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:.5rem;margin-top:.9rem;flex-wrap:wrap}
+.hint{font-size:.72rem;color:var(--text-3);margin-top:.6rem;line-height:1.55}
+.hint b{color:var(--text-2)}
+.status{font-family:var(--mono);font-size:.72rem;color:var(--text-3);margin-top:.7rem;min-height:1.1em}
 .status.busy{color:var(--accent)}
-.foot{margin-top:var(--sp-6);border-top:1px solid var(--rule);padding-top:var(--sp-2);font-size:.72rem;color:var(--ink-faint);display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.foot b{color:var(--ink-soft);font-weight:600}
+.status.err{color:var(--red)}
+
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:.7rem;margin-bottom:1.2rem}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:.8rem .5rem;text-align:center}
+.stat .v{font-family:var(--serif);font-size:1.55rem;line-height:1.1}
+.stat .k{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-top:.25rem}
+.stat.ok .v{color:var(--teal)}
+.stat.bad .v{color:var(--red)}
+
+.two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:1.2rem;margin-bottom:1.2rem}
+@media(max-width:1100px){.two{grid-template-columns:1fr}}
+#map{width:100%;height:340px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px}
+.map-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-3);font-family:var(--serif);font-style:italic;text-align:center;padding:1rem}
+.legend{font-size:.68rem;color:var(--text-3);margin-top:.5rem;display:flex;gap:1rem;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:.3rem;vertical-align:-1px}
+
+.dist{list-style:none;margin:.7rem 0 0;padding:0;font-size:.75rem}
+.dist li{margin-bottom:.55rem}
+.dist .lab{display:flex;justify-content:space-between;color:var(--text-2);margin-bottom:.25rem}
+.dist .bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.dist .fill{height:100%;border-radius:3px}
+.fill.teal{background:var(--teal)}.fill.amber{background:var(--amber)}.fill.red{background:var(--red)}
+
+.notes{list-style:none;margin:0;padding:0;display:grid;gap:.4rem}
+.notes li{font-size:.76rem;padding:.5rem .7rem;border-left:2px solid var(--line);background:var(--panel-2);border-radius:0 4px 4px 0;color:var(--text-2)}
+.notes li.warn{border-color:var(--amber);color:var(--amber)}
+.notes li.ok{border-color:var(--teal);color:var(--teal)}
+.notes li.bad{border-color:var(--red);color:var(--red)}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+thead th{text-align:left;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:500;padding:.5rem .55rem;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:.5rem .55rem;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr:hover{background:var(--panel-2)}
+td.hop{font-family:var(--mono);color:var(--accent);width:2.2rem}
+td.ip{font-family:var(--mono);font-size:.74rem;word-break:break-all;max-width:20rem}
+td.ms{font-family:var(--mono);color:var(--text-2);white-space:nowrap}
+.badge{display:inline-block;font-size:.64rem;padding:.1rem .4rem;border-radius:3px;white-space:nowrap}
+.b-ok{background:var(--teal-dim);color:var(--teal)}
+.b-warn{background:oklch(38% 0.09 78);color:var(--amber)}
+.b-bad{background:var(--red-dim);color:var(--red)}
+.b-local{background:var(--panel-2);color:var(--text-3)}
+.org{font-size:.7rem;color:var(--text-2)}
+.sub{font-size:.66rem;color:var(--text-3)}
+
+.foot{margin-top:1.6rem;border-top:1px solid var(--line);padding-top:.8rem;font-size:.68rem;color:var(--text-3);display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="sheet">
+<h2 class="sr-only">网络路径探测台：本地执行 traceroute、解析节点归属并在地图上绘制路径</h2>
+<div class="app">
 
-  <header class="masthead">
-    <div class="kicker">Nettrace · 路径解析台</div>
-    <h1>行迹</h1>
-    <p class="dek">把一跳跳的地址，还原成一张看得懂的地图。</p>
-  </header>
+  <div class="topbar">
+    <div class="brand"><h1>行迹</h1><span class="sub">nettrace console</span></div>
+    <div class="svc">
+      <span id="svcDot" class="dot off"></span>
+      <span id="svcText">本地服务：检测中…</span>
+      <button id="svcRetry" title="重新检测本地服务">重连</button>
+    </div>
+  </div>
 
-  <div class="cols">
-    <!-- 输入栏 -->
-    <section>
-      <h2 class="sec-h"><span class="sec-num">01</span>输入</h2>
-
-      <div class="seg" role="tablist" aria-label="输入方式">
-        <button id="tab-paste" role="tab" aria-selected="true">粘贴输出</button>
-        <button id="tab-target" role="tab" aria-selected="false">生成命令</button>
-      </div>
-
-      <div class="panel" id="panel-paste">
-        <label class="fl" for="raw">Traceroute 原始输出</label>
-        <textarea id="raw" spellcheck="false" placeholder="把 traceroute / tracert 的输出粘贴到这里…&#10;&#10;例如：&#10; 1  10.0.0.1  1.2 ms&#10; 2  203.0.113.122  3.4 ms"></textarea>
-        <div class="row">
-          <button class="btn btn-primary" id="run">解析路径 →</button>
-          <button class="btn btn-ghost" id="sample">载入示例</button>
-          <button class="btn btn-ghost" id="clear">清空</button>
+  <div class="grid">
+    <!-- 左：控制台 -->
+    <div>
+      <section class="panel">
+        <h2><span class="n">01</span>探测源</h2>
+        <div class="seg" role="tablist">
+          <button id="tab-live" role="tab" aria-selected="true">本地执行</button>
+          <button id="tab-paste" role="tab" aria-selected="false">粘贴输出</button>
         </div>
-      </div>
 
-      <div class="panel" id="panel-target" hidden>
-        <label class="fl" for="target">目标域名或 IP</label>
-        <input class="txt" id="target" placeholder="example.com">
-        <div class="row">
-          <button class="btn btn-ghost" data-os="mac">macOS / Linux</button>
-          <button class="btn btn-ghost" data-os="win">Windows</button>
+        <div id="pane-live">
+          <label for="target">目标域名 / IP</label>
+          <input class="inp" id="target" placeholder="example.com" spellcheck="false">
+          <div class="opts">
+            <select id="mode" title="探测协议">
+              <option value="udp">UDP（默认）</option>
+              <option value="tcp">TCP 443</option>
+              <option value="icmp">ICMP</option>
+            </select>
+            <select id="maxhops" title="最大跳数">
+              <option value="15">15 跳</option>
+              <option value="30" selected>30 跳</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="runLive">开始探测</button>
+            <button class="btn" id="multiNode" title="跳转 tcping.cn 多节点测">多节点测</button>
+          </div>
+          <p class="hint">本机执行 traceroute（Windows 用 tracert）。需先运行 <b>python nettrace_server.py</b>。TCP/ICMP 在 Mac/Linux 需 sudo。</p>
         </div>
-        <div class="cmdout" id="cmdout" hidden><span id="cmdtext"></span><button id="copy">复制</button></div>
-        <p class="hint" style="margin-top:var(--sp-3)">浏览器出于安全限制无法直接发出 traceroute。复制上面命令到终端执行，再把结果贴回「粘贴输出」。</p>
-      </div>
 
-      <div class="status" id="status" role="status" aria-live="polite"></div>
-    </section>
+        <div id="pane-paste" hidden>
+          <label for="raw">Traceroute 原始输出</label>
+          <textarea id="raw" spellcheck="false" placeholder="粘贴 traceroute / tracert 输出…"></textarea>
+          <div class="actions">
+            <button class="btn btn-primary" id="runPaste">解析路径</button>
+            <button class="btn" id="sample">载入示例</button>
+            <button class="btn" id="clear">清空</button>
+          </div>
+        </div>
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+      </section>
 
-    <!-- 结果栏 -->
-    <section>
-      <h2 class="sec-h"><span class="sec-num">02</span>概览</h2>
+      <section class="panel" style="margin-top:1.2rem">
+        <h2><span class="n">02</span>丢包率分布</h2>
+        <ul class="dist" id="lossDist">
+          <li><div class="lab"><span>等待数据</span></div><div class="bar"><div class="fill" style="width:0"></div></div></li>
+        </ul>
+        <h2 style="margin-top:1.3rem"><span class="n">03</span>延迟分布</h2>
+        <ul class="dist" id="latDist">
+          <li><div class="lab"><span>等待数据</span></div><div class="bar"><div class="fill" style="width:0"></div></div></li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- 右：结果 -->
+    <div>
       <div class="stats">
-        <div class="stat"><div class="k">跳数</div><div class="v" id="s-hops">—</div></div>
-        <div class="stat"><div class="k">节点</div><div class="v" id="s-nodes">—</div></div>
-        <div class="stat"><div class="k">定位</div><div class="v" id="s-geo">—</div></div>
-        <div class="stat"><div class="k">状态</div><div class="v" id="s-state">—</div></div>
+        <div class="stat"><div class="v" id="s-hops">—</div><div class="k">总跳数</div></div>
+        <div class="stat"><div class="v" id="s-ok">—</div><div class="k">响应</div></div>
+        <div class="stat bad"><div class="v" id="s-loss">—</div><div class="k">丢包节点</div></div>
+        <div class="stat"><div class="v" id="s-avg">—</div><div class="k">平均延迟</div></div>
+        <div class="stat"><div class="v" id="s-dist">—</div><div class="k">路径距离</div></div>
+        <div class="stat ok"><div class="v" id="s-state">—</div><div class="k">状态</div></div>
       </div>
 
-      <h2 class="sec-h"><span class="sec-num">03</span>路径地图</h2>
-      <div id="map"><div class="map-empty">路径会画在这里 · 先解析一段 traceroute</div></div>
-      <div class="map-note">圆点按跳序编号，红线为路径走向；坐标为城市级定位，仅供大致方位参考。</div>
+      <div class="two">
+        <section class="panel" style="margin:0">
+          <h2><span class="n">04</span>路径地图</h2>
+          <div id="map"><div class="map-empty">路径会画在这里 · 先探测或解析一段 traceroute</div></div>
+          <div class="legend">
+            <span><i style="background:var(--teal)"></i>正常</span>
+            <span><i style="background:var(--amber)"></i>高延迟</span>
+            <span><i style="background:var(--red)"></i>严重丢包</span>
+            <span>红线为路径走向，数字为跳序</span>
+          </div>
+        </section>
+        <section class="panel" style="margin:0">
+          <h2><span class="n">05</span>诊断</h2>
+          <ul class="notes" id="notes"><li>等待探测…</li></ul>
+        </section>
+      </div>
 
-      <h2 class="sec-h" style="margin-top:var(--sp-5)"><span class="sec-num">04</span>诊断</h2>
-      <ul class="notes" id="notes"><li class="info">等待解析…</li></ul>
-
-      <h2 class="sec-h"><span class="sec-num">05</span>逐跳明细</h2>
-      <table>
-        <thead><tr><th>跳</th><th>节点</th><th>延迟 ms</th><th>归属 / 标注</th></tr></thead>
-        <tbody id="tbody"><tr><td colspan="4" style="color:var(--ink-faint);font-family:var(--serif);font-style:italic">暂无数据</td></tr></tbody>
-      </table>
-    </section>
+      <section class="panel">
+        <h2><span class="n">06</span>逐跳明细</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>跳</th><th>IP</th><th>状态</th><th>延迟 ms</th><th>归属 / 标注</th></tr></thead>
+            <tbody id="tbody"><tr><td colspan="5" style="color:var(--text-3)">暂无数据</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </div>
 
   <footer class="foot">
-    <span>归属 <b>ipinfo.io</b> · 私网 / DoD 名义段 / ULA 由本地规则识别 · 底图 <b>腾讯地图</b></span>
-    <span>纸面注册地 ≠ 实际使用地</span>
+    <span>归属 ipinfo.io · 私网 / DoD 名义段 / ULA 本地识别 · 底图 腾讯地图</span>
+    <span>纸面注册地 ≠ 实际使用地 · 距离为城市级直线估算</span>
   </footer>
 </div>
 
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
+const API = "http://127.0.0.1:8765";
 
-/* ---------- 本地规则（对齐 Python 版） ---------- */
-function netOf(cidr){
-  const [a,b]=cidr.split("/");return [a,parseInt(b,10)];
-}
+/* ============ 本地规则 ============ */
 function ipver(s){return s.includes(":")?6:4}
 function ipv4Num(s){return s.split(".").reduce((n,o)=>(n<<8)+parseInt(o,10),0)>>>0}
 const V4_SPECIAL=[
@@ -218,52 +259,55 @@ const V4_SPECIAL=[
 ];
 function classify(ip){
   let s=ip;
-  // IPv4-mapped IPv6
   const m=s.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
-  if(m){const inner=classify(m[1]);return {label:"IPv4 映射",online:inner.online,
-    note:"内层 "+m[1]+(inner.label!=="公网地址"?"；"+inner.label:"")};}
+  if(m){const inner=classify(m[1]);return {label:"IPv4 映射",online:inner.online,note:"内层 "+m[1]+(inner.label!=="公网地址"?"；"+inner.label:"")};}
   if(ipver(s)===6){
     const lo=s.toLowerCase();
     if(lo.startsWith("fd")||lo.startsWith("fc"))return{label:"ULA 私有 IPv6",online:false,note:"私有内网，公网不可查"};
-    if(lo.startsWith("fe8")||lo.startsWith("fe9")||lo.startsWith("fea")||lo.startsWith("feb"))return{label:"IPv6 链路本地",online:false,note:""};
+    if(/^fe[89ab]/.test(lo))return{label:"IPv6 链路本地",online:false,note:""};
     if(lo==="::1")return{label:"IPv6 回环",online:false,note:""};
-    if(lo.startsWith("2001:db8"))return{label:"IPv6 文档示例",online:false,note:""};
+    if(lo.startsWith("2001:db8"))return{label:"文档示例",online:false,note:"RFC 3849 文档地址"};
     return{label:"公网地址",online:true,note:""};
   }
   const n=ipv4Num(s);
   for(const [base,bits,lab,online] of V4_SPECIAL){
-    const [bn]=netOf(base+"/"+bits);const mask=bits===0?0:(0xffffffff<<(32-bits))>>>0;
-    if((n&mask)===(ipv4Num(bn)&mask))return{label:lab,online,note:lab.includes("DoD")?"纸面属美国国防部；国内云厂商作正常公网使用":"内网/特殊用途地址"};
+    const bn=ipv4Num(base);const mask=bits===0?0:(0xffffffff<<(32-bits))>>>0;
+    if((n&mask)===(bn&mask))return{label:lab,online,note:lab.includes("DoD")?"纸面属美国国防部；国内云厂商作正常公网使用":(lab.includes("文档")?"RFC 5737 文档地址":"内网/特殊用途地址")};
   }
   return{label:"公网地址",online:true,note:""};
 }
 
-/* ---------- WGS-84 → GCJ-02 ---------- */
+/* ============ WGS-84 → GCJ-02 ============ */
 function outOfChina(lat,lng){return !(lng>73.66&&lng<135.05&&lat>3.86&&lat<53.55)}
 function wgs2gcj(lat,lng){
   if(outOfChina(lat,lng))return[lat,lng];
   const pi=Math.PI,a=6378245.0,ee=0.00669342162296594323;
-  const tLat=(x,y)=>{let r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));
+  const tLat=(x,y)=>{let r=-100+2*x+3*y+.2*y*y+.1*x*y+.2*Math.sqrt(Math.abs(x));
     r+=(20*Math.sin(6*x*pi)+20*Math.sin(2*x*pi))*2/3;
     r+=(20*Math.sin(y*pi)+40*Math.sin(y/3*pi))*2/3;
     r+=(160*Math.sin(y/12*pi)+320*Math.sin(y*pi/30))*2/3;return r;};
-  const tLng=(x,y)=>{let r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));
+  const tLng=(x,y)=>{let r=300+x+2*y+.1*x*x+.1*x*y+.1*Math.sqrt(Math.abs(x));
     r+=(20*Math.sin(6*x*pi)+20*Math.sin(2*x*pi))*2/3;
     r+=(20*Math.sin(x*pi)+40*Math.sin(x/3*pi))*2/3;
     r+=(150*Math.sin(x/12*pi)+300*Math.sin(x/30*pi))*2/3;return r;};
   let dlat=tLat(lng-105,lat-35),dlng=tLng(lng-105,lat-35);
   const rad=lat/180*pi;let magic=Math.sin(rad);magic=1-ee*magic*magic;const sq=Math.sqrt(magic);
-  dlat=dlat*180/((a*(1-ee))/(magic*sq)*pi);
-  dlng=dlng*180/(a/sq*Math.cos(rad)*pi);
+  dlat=dlat*180/((a*(1-ee))/(magic*sq)*pi);dlng=dlng*180/(a/sq*Math.cos(rad)*pi);
   return[lat+dlat,lng+dlng];
 }
+function haversine(a,b){
+  const R=6371,rad=x=>x*Math.PI/180;
+  const dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
 
-/* ---------- 解析 traceroute 文本 ---------- */
+/* ============ 解析粘贴文本 ============ */
 function parseHops(text){
   const hops=[];
   for(const raw of text.split(/\r?\n/)){
     const head=raw.trim();if(!head)continue;
-    if(/^(traceroute|tracert)\b/i.test(head)||head.includes("hops max")||head.includes("跟踪"))continue;
+    if(/^(traceroute|tracert)\b/i.test(head)||head.includes("hops max")||head.includes("跟踪")||head.includes("完成"))continue;
     const toks=head.split(/\s+/);
     const hn=/^\d+$/.test(toks[0])?parseInt(toks[0],10):null;
     const ips=[],lat=[];
@@ -271,32 +315,26 @@ function parseHops(text){
       const c=t.replace(/^[([]|[)\],;]$/g,"");
       if(/^\d{1,3}(\.\d{1,3}){3}$/.test(c)||/^[0-9a-fA-F]*:(?:[0-9a-fA-F]*:)+[0-9a-fA-F:]*$/.test(c)){ips.push(c);return;}
       const mm=t.match(/^<?(\d+(?:\.\d+)?)$/);
-      if(mm&&toks[i+1]&&toks[i+1].toLowerCase()==="ms")lat.push(parseFloat(mm[1]));
+      if(mm&&toks[i+1]&&["ms","毫秒"].includes(toks[i+1].toLowerCase()))lat.push(parseFloat(mm[1]));
     });
-    if(ips.length||lat.length)hops.push({hop:hn,ips,lat});
+    if(hn!==null||ips.length||lat.length)hops.push({hop:hn,ips,lat});
   }
   return hops;
 }
 
-/* ---------- 查询归属（JSONP，绕过 connect-src 限制；带内存缓存） ---------- */
+/* ============ 归属查询（JSONP 绕过 connect-src） ============ */
 const infoCache=new Map();
 let jsonpSeq=0;
 function ipinfoJsonp(ip,timeout){
   return new Promise(resolve=>{
-    const cb="__ntcb_"+(++jsonpSeq);
-    let settled=false;
+    const cb="__ntcb_"+(++jsonpSeq);let settled=false;
     const script=document.createElement("script");
-    const timer=setTimeout(()=>finish({error:"查询超时"}),timeout||9000);
-    function finish(d){
-      if(settled)return;settled=true;
-      clearTimeout(timer);
-      try{delete window[cb];}catch(e){window[cb]=undefined;}
-      script.remove();
-      resolve(d);
-    }
+    const timer=setTimeout(()=>finish({error:"查询超时"}),timeout||8000);
+    function finish(d){if(settled)return;settled=true;clearTimeout(timer);
+      try{delete window[cb]}catch(e){window[cb]=undefined}script.remove();resolve(d);}
     window[cb]=j=>finish({country:j.country||"",region:j.region||"",city:j.city||"",org:j.org||"",loc:j.loc||""});
     script.src="https://ipinfo.io/"+encodeURIComponent(ip)+"/json?callback="+cb;
-    script.onerror=()=>finish({error:"归属查询失败（网络或 CSP）"});
+    script.onerror=()=>finish({error:"查询失败"});
     document.head.appendChild(script);
   });
 }
@@ -304,33 +342,52 @@ async function queryIp(ip){
   if(infoCache.has(ip))return infoCache.get(ip);
   const c=classify(ip);
   if(!c.online){const d={local_label:c.label,local_note:c.note};infoCache.set(ip,d);return d;}
-  const d=await ipinfoJsonp(ip);
-  d.local_label=c.label;d.local_note=c.note;
+  const d=await ipinfoJsonp(ip);d.local_label=c.label;d.local_note=c.note;
   infoCache.set(ip,d);return d;
 }
 
-/* ---------- 诊断 ---------- */
+/* ============ 服务检测 ============ */
+async function checkService(){
+  const dot=$("#svcDot"),txt=$("#svcText");
+  try{
+    const r=await fetch(API+"/api/health",{signal:AbortSignal.timeout(3000)});
+    const j=await r.json();
+    if(j.ok){dot.className="dot on";txt.textContent="本地服务：在线 · "+j.platform;$("#runLive").disabled=false;return true;}
+    throw new Error("bad");
+  }catch(e){
+    dot.className="dot off";txt.textContent="本地服务：离线";$("#runLive").disabled=true;return false;
+  }
+}
+
+/* ============ 状态分级 ============ */
+function hopStatus(h){
+  if(!h.ips.length)return "bad";
+  if(!h.lat.length)return "bad";
+  const maxLat=Math.max(...h.lat);
+  if(maxLat>=100)return "bad";
+  if(maxLat>=30)return "warn";
+  return "ok";
+}
+
+/* ============ 诊断 ============ */
 function diagnose(hops,info,ipLat){
   const out=[];
-  for(const h of hops){
-    if(h.ips.length>1)out.push(["info",`第 ${h.hop??"?"} 跳出现 ${h.ips.length} 个地址：ECMP / 负载分担，正常现象`]);
-  }
+  const bad=hops.filter(h=>hopStatus(h)==="bad").length;
+  if(bad)out.push(["bad",`${bad} 个跳无响应 / 严重丢包；若终点仍正常，则多为中间设备不回 ICMP，非链路中断`]);
+  for(const h of hops){if(h.ips.length>1)out.push(["info",`第 ${h.hop??"?"} 跳出现 ${h.ips.length} 个地址：ECMP / 负载分担，正常现象`]);}
   for(const [ip,d] of info){
     const org=d.org||"",country=d.country||"",city=d.city||"";
     const arr=ipLat.get(ip)||[];const ms=arr.length?Math.min(...arr):9999;
     if(/(DoD|Department of Defense)/.test(org)&&ms<15)
-      out.push(["warn",`${ip} 被地理库标为 DoD（${city||"US"}），但延迟仅 ${ms}ms；8/11 段在国内由云厂商作公网使用，属纸面注册信息`]);
+      out.push(["warn",`${ip} 被标为 DoD（${city||"US"}），延迟仅 ${ms}ms；8/11 段在国内由云厂商作公网使用`]);
     if(country&&country!=="CN"&&ms<8)
-      out.push(["warn",`${ip} 被标为 ${city} ${country}，但延迟仅 ${ms}ms，疑似境内节点被错误地理标注`]);
-    if(d.local_label==="DoD 名义保留段")
-      out.push(["info",`${ip} 命中 DoD 名义保留段，实际多为国内云/运营商公网地址`]);
+      out.push(["warn",`${ip} 标为 ${city} ${country} 但延迟仅 ${ms}ms，疑似境内节点被错误地理标注`]);
   }
-  const invis=hops.filter(h=>!h.ips.length).length;
-  if(invis>=3)out.push(["info",`存在 ${invis} 个不可见跳：中间设备不回 ICMP，不代表链路中断`]);
+  if(hops.length&&hops.at(-1).ips.length)out.push(["ok",`终点响应正常（第 ${hops.at(-1).hop} 跳，${fmt(Math.min(...hops.at(-1).lat))} ms）— 链路可达`]);
   return out;
 }
 
-/* ---------- 地图路径点 ---------- */
+/* ============ 地图路径 ============ */
 function buildPath(hops,info){
   const pts=[],seen=new Set();
   for(const h of hops){
@@ -340,114 +397,134 @@ function buildPath(hops,info){
       if(!d.loc||!d.loc.includes(","))continue;
       const [la,ln]=d.loc.split(",").map(Number);if(!isFinite(la)||!isFinite(ln))continue;
       const [glat,glng]=wgs2gcj(la,ln);
-      const key=glat.toFixed(3)+","+glng.toFixed(3);if(seen.has(key))continue;
-      seen.add(key);
+      const key=glat.toFixed(3)+","+glng.toFixed(3);if(seen.has(key))continue;seen.add(key);
       let org=d.org||"";if(/^\d{2}\s/.test(org))org=org.split(" ").slice(1).join(" ");
-      const city=[d.city,d.region,d.country].filter(Boolean).join(" ");
-      pts.push({ip,hop:h.hop,lat:+glat.toFixed(6),lng:+glng.toFixed(6),city,org,
-        ms:h.lat.length?Math.min(...h.lat):null});
+      pts.push({ip,hop:h.hop,lat:+glat.toFixed(6),lng:+glng.toFixed(6),
+        city:[d.city,d.region,d.country].filter(Boolean).join(" "),org,
+        ms:h.lat.length?Math.min(...h.lat):null,status:hopStatus(h)});
       break;
     }
   }
   return pts;
 }
-
-/* ---------- 渲染 ---------- */
 let map=null;
+const MARKER={
+  ok:'<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="11" fill="#2f6b5a" stroke="#7fd8b8" stroke-width="2"/></svg>',
+  warn:'<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="11" fill="#8a6420" stroke="#e0b25a" stroke-width="2"/></svg>',
+  bad:'<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="11" fill="#8a2f2f" stroke="#e07a7a" stroke-width="2"/></svg>'
+};
 function renderMap(path){
   const el=$("#map");
-  if(map){map.destroy();map=null;}
-  if(!path.length){el.innerHTML='<div class="map-empty">路径上无可定位的公网节点<br>（可能全为私网 / ULA / 无地理数据）</div>';return;}
+  if(map){try{map.destroy()}catch(e){}map=null;}
+  if(!path.length){el.innerHTML='<div class="map-empty">路径上无可定位的公网节点<br>（可能全为私网 / ULA / 文档地址）</div>';return;}
   el.innerHTML="";
   if(typeof TMap==="undefined"){el.innerHTML='<div class="map-empty">地图组件未能加载（检查网络）</div>';return;}
   const lats=path.map(p=>p.lat),lngs=path.map(p=>p.lng);
   const cLat=(Math.min(...lats)+Math.max(...lats))/2,cLng=(Math.min(...lngs)+Math.max(...lngs))/2;
   const span=Math.max(Math.max(...lats)-Math.min(...lats),Math.max(...lngs)-Math.min(...lngs));
-  const zoom=span>8?4:span>4?5:span>2?6:span>0.5?8:11;
+  const zoom=span>8?4:span>4?5:span>2?6:span>.5?8:11;
   map=new TMap.Map(el,{zoom,center:new TMap.LatLng(cLat,cLng)});
   const coords=path.map(p=>new TMap.LatLng(p.lat,p.lng));
-  if(coords.length>=2){
-    new TMap.MultiPolyline({map,styles:{line:new TMap.PolylineStyle({color:"#9b3b2e",width:3,borderWidth:1,borderColor:"#ffffff",lineCap:"round"})},
-      geometries:[{id:"route",styleId:"line",paths:coords}]});
-  }
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="#ffffff" stroke="#9b3b2e" stroke-width="2"/><circle cx="14" cy="14" r="9" fill="#9b3b2e"/></svg>';
-  const style=new TMap.MarkerStyle({width:28,height:28,anchor:{x:14,y:14},src:"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)});
-  const markers=new TMap.MultiMarker({map,styles:{dot:style},geometries:path.map(p=>({
-    id:"n_"+p.hop+"_"+p.ip,styleId:"dot",position:new TMap.LatLng(p.lat,p.lng),
-    properties:{html:`<div style="font-family:sans-serif;font-size:13px;line-height:1.7;min-width:170px"><b>第 ${p.hop??"?"} 跳</b><br><span style="font-family:monospace">${p.ip}</span><br>${p.city||""}<br>${p.org||""}<br>${p.ms!=null?"延迟 "+p.ms+" ms":""}</div>`}
+  if(coords.length>=2)new TMap.MultiPolyline({map,
+    styles:{line:new TMap.PolylineStyle({color:"#b0462f",width:3,borderWidth:1,borderColor:"#ffffff",lineCap:"round"})},
+    geometries:[{id:"route",styleId:"line",paths:coords}]});
+  const styles={};
+  for(const k of ["ok","warn","bad"])styles[k]=new TMap.MarkerStyle({width:26,height:26,anchor:{x:13,y:13},src:"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(MARKER[k])});
+  const markers=new TMap.MultiMarker({map,styles,geometries:path.map(p=>({
+    id:"n_"+p.hop+"_"+p.ip,styleId:["ok","warn","bad"].includes(p.status)?p.status:"ok",
+    position:new TMap.LatLng(p.lat,p.lng),
+    properties:{html:'<div style="font-family:sans-serif;font-size:13px;line-height:1.7;min-width:170px;color:#1a1a1a"><b>第 '+(p.hop??"?")+' 跳</b><br><span style="font-family:monospace">'+p.ip+'</span><br>'+(p.city||"")+'<br>'+(p.org||"")+'<br>'+(p.ms!=null?"延迟 "+p.ms+" ms":"")+'</div>'}
   }))});
-  new TMap.MultiLabel({map,styles:{num:new TMap.LabelStyle({color:"#1c1b19",size:12,angle:0,alignment:"center",verticalAlignment:"middle",offset:{x:0,y:0}})},
+  new TMap.MultiLabel({map,styles:{num:new TMap.LabelStyle({color:"#ffffff",size:11,angle:0,alignment:"center",verticalAlignment:"middle",offset:{x:0,y:0}})},
     geometries:path.map(p=>({id:"l_"+p.hop+"_"+p.ip,styleId:"num",position:new TMap.LatLng(p.lat,p.lng),content:String(p.hop??"")}))});
-  const infoWin=new TMap.InfoWindow({map,position:coords[0],content:"",enableCustom:false,offset:{x:0,y:-18}});
-  infoWin.close();
-  markers.on("click",e=>{infoWin.setContent(e.geometry.properties.html);infoWin.setPosition(e.geometry.position);infoWin.open();});
+  const iw=new TMap.InfoWindow({map,position:coords[0],content:"",offset:{x:0,y:-16}});iw.close();
+  markers.on("click",e=>{iw.setContent(e.geometry.properties.html);iw.setPosition(e.geometry.position);iw.open();});
 }
+
+/* ============ 分布图 ============ */
+function renderDist(hops){
+  const total=hops.length||1;
+  const bad=hops.filter(h=>hopStatus(h)==="bad").length;
+  const warn=hops.filter(h=>hopStatus(h)==="warn").length;
+  const ok=hops.filter(h=>hopStatus(h)==="ok").length;
+  const rows=[["严重丢包 / 无响应",bad,"red"],["高延迟 >=30ms",warn,"amber"],["响应正常",ok,"teal"]];
+  $("#lossDist").innerHTML=rows.map(([lab,n,c])=>'<li><div class="lab"><span>'+lab+'</span><span>'+n+' ('+Math.round(n/total*100)+'%)</span></div><div class="bar"><div class="fill '+c+'" style="width:'+(n/total*100)+'%"></div></div></li>').join("");
+  const lats=hops.flatMap(h=>h.lat);
+  const bands=[["< 1ms",lats.filter(x=>x<1).length,"teal"],["1-10ms",lats.filter(x=>x>=1&&x<10).length,"teal"],["10-50ms",lats.filter(x=>x>=10&&x<50).length,"amber"],["> 50ms",lats.filter(x=>x>=50).length,"red"]];
+  const lt=lats.length||1;
+  $("#latDist").innerHTML=bands.map(([lab,n,c])=>'<li><div class="lab"><span>'+lab+'</span><span>'+n+' ('+Math.round(n/lt*100)+'%)</span></div><div class="bar"><div class="fill '+c+'" style="width:'+(n/lt*100)+'%"></div></div></li>').join("");
+}
+
+/* ============ 主流程 ============ */
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function fmt(x){return Math.round(x*100)/100+""}
 
-async function run(){
-  const text=$("#raw").value;
-  const st=$("#status");
-  if(!text.trim()){st.textContent="请先粘贴 traceroute 输出";st.className="status";return;}
-  st.textContent="解析中…";st.className="status busy";
-  const hops=parseHops(text);
-  if(!hops.length){st.textContent="未解析出任何跳，请检查输入格式";st.className="status";return;}
-
-  const ips=[];
-  for(const h of hops)for(const ip of h.ips)if(!ips.includes(ip))ips.push(ip);
+async function process(hops,statusEl){
+  const st=statusEl||$("#status");
+  if(!hops.length){st.textContent="未解析出任何跳";st.className="status err";return;}
+  const ips=[];for(const h of hops)for(const ip of h.ips)if(!ips.includes(ip))ips.push(ip);
   const info=new Map();
   for(let i=0;i<ips.length;i++){
-    st.textContent=`查询归属 ${i+1} / ${ips.length}…`;
+    st.textContent="查询归属 "+(i+1)+"/"+ips.length+"…";st.className="status busy";
     info.set(ips[i],await queryIp(ips[i]));
   }
-
-  const ipLat=new Map();
-  for(const h of hops)for(const ip of h.ips){
-    if(!ipLat.has(ip))ipLat.set(ip,[]);
-    ipLat.get(ip).push(...h.lat);
-  }
+  const ipLat=new Map();for(const h of hops)for(const ip of h.ips){if(!ipLat.has(ip))ipLat.set(ip,[]);ipLat.get(ip).push(...h.lat);}
   const notes=diagnose(hops,info,ipLat);
   const path=buildPath(hops,info);
-  const uniq=[...new Set(hops.flatMap(h=>h.ips))];
 
-  // 统计
+  const okHops=hops.filter(h=>hopStatus(h)==="ok").length;
+  const badHops=hops.filter(h=>hopStatus(h)==="bad").length;
+  const allLat=hops.flatMap(h=>h.lat);
   $("#s-hops").textContent=hops.length;
-  $("#s-nodes").textContent=uniq.length;
-  $("#s-geo").textContent=path.length;
-  const reached=notes.some(n=>n[0]==="ok");
-  const stEl=$("#s-state");
-  stEl.textContent=hops.some(h=>h.ips.length)?"已解析":"—";
-  stEl.className="v "+((hops.at(-1)?.ips.length)?"ok":"no");
+  $("#s-ok").textContent=okHops;
+  $("#s-loss").textContent=badHops;
+  $("#s-avg").textContent=allLat.length?fmt(allLat.reduce((a,b)=>a+b,0)/allLat.length)+"ms":"—";
+  let dist=0;for(let i=1;i<path.length;i++)dist+=haversine(path[i-1],path[i]);
+  $("#s-dist").textContent=path.length>1?Math.round(dist)+"km":"—";
+  const reached=hops.length&&hops.at(-1).ips.length;
+  $("#s-state").textContent=reached?"可达":"未知";
+  $("#s-state").parentElement.className="stat "+(reached?"ok":"bad");
 
-  // 诊断
-  $("#notes").innerHTML=notes.length?notes.map(([lv,t])=>`<li class="${lv}">${esc(t)}</li>`).join(""):'<li class="info">无特殊诊断项</li>';
+  $("#notes").innerHTML=notes.length?notes.map(([lv,t])=>'<li class="'+lv+'">'+esc(t)+'</li>').join(""):"<li>无特殊诊断项</li>";
 
-  // 表格
   const rows=[];
   for(const h of hops){
     const list=h.ips.length?h.ips:["* * *"];
     const ms=h.lat.length?h.lat.map(x=>fmt(x)).join(" "):"—";
+    const stat=hopStatus(h);
+    const badge=stat==="ok"?'<span class="badge b-ok">响应</span>':stat==="warn"?'<span class="badge b-warn">高延迟</span>':'<span class="badge b-bad">丢包</span>';
     list.forEach((ip,j)=>{
-      const d=info.get(ip)||{};
-      const lab=d.local_label||"";
+      const d=info.get(ip)||{};const lab=d.local_label||"";
       let tag,sub;
-      if(lab&&lab!=="公网地址"){tag=`<span class="tag local">${esc(lab)}</span>`;sub=esc(d.local_note||"");}
+      if(lab&&lab!=="公网地址"){tag='<span class="badge b-local">'+esc(lab)+'</span>';sub=esc(d.local_note||"");}
       else if(d.org){let o=d.org;if(/^\d{2}\s/.test(o))o=o.split(" ").slice(1).join(" ");
-        tag=`<span class="tag public">${esc(o)}</span>`;
-        sub=esc([d.city,d.region,d.country].filter(Boolean).join(" "));}
-      else if(d.error){tag='<span class="tag local">查询失败</span>';sub=esc(String(d.error).slice(0,50));}
-      else{tag='<span class="tag local">—</span>';sub="";}
-      rows.push(`<tr><td class="hop">${j===0?(h.hop??""):""}</td><td class="ip">${esc(ip)}</td><td class="ms">${j===0?ms:""}</td><td>${tag}${sub?`<div class="sub">${sub}</div>`:""}</td></tr>`);
+        tag='<span class="org">'+esc(o)+'</span>';sub=esc([d.city,d.region,d.country].filter(Boolean).join(" "));}
+      else if(d.error){tag='<span class="badge b-local">查询失败</span>';sub="";}
+      else{tag='<span class="badge b-local">—</span>';sub="";}
+      rows.push('<tr><td class="hop">'+(j===0?(h.hop??""):"")+'</td><td class="ip">'+esc(ip)+'</td><td>'+(j===0?badge:"")+'</td><td class="ms">'+(j===0?ms:"")+'</td><td>'+tag+(sub?'<div class="sub">'+sub+'</div>':"")+'</td></tr>');
     });
   }
   $("#tbody").innerHTML=rows.join("");
-
+  renderDist(hops);
   renderMap(path);
-  st.textContent=`完成 · ${hops.length} 跳 · ${path.length} 个定位节点`;
-  st.className="status";
+  st.textContent="完成 · "+hops.length+" 跳 · "+path.length+" 个定位节点";st.className="status";
 }
-function fmt(x){return Math.round(x*100)/100+""}
 
-/* ---------- UI 事件 ---------- */
+/* ============ 事件 ============ */
+$("#svcRetry").onclick=async()=>{$("#svcText").textContent="本地服务：检测中…";await checkService();};
+$("#runLive").onclick=async()=>{
+  const target=$("#target").value.trim();
+  if(!target){$("#status").textContent="请输入目标域名或 IP";$("#status").className="status err";return;}
+  const mode=$("#mode").value,mh=$("#maxhops").value;
+  $("#status").textContent="正在本机执行 traceroute → "+target+"…";$("#status").className="status busy";
+  try{
+    const r=await fetch(API+"/api/trace?target="+encodeURIComponent(target)+"&mode="+mode+"&max="+mh,{signal:AbortSignal.timeout(180000)});
+    const j=await r.json();
+    if(!j.ok&&j.error){$("#status").textContent="探测失败："+j.error;$("#status").className="status err";return;}
+    await process(j.hops,$("#status"));
+  }catch(e){$("#status").textContent="调用本地服务失败："+e.message;$("#status").className="status err";}
+};
+$("#runPaste").onclick=async()=>{await process(parseHops($("#raw").value));};
 const SAMPLE="traceroute to example.com (2001:db8:100b:c700:b479:3172:2cbc:e6e4), 30 hops max\n"+
 "1  2001:db8:220b:301e::1  2.283 ms  2.004 ms\n"+
 "2  2001:db8:e008:9201::be  2.143 ms  2.300 ms\n"+
@@ -455,33 +532,21 @@ const SAMPLE="traceroute to example.com (2001:db8:100b:c700:b479:3172:2cbc:e6e4)
 "5  2001:db8:f200::b6fe:7e67  2.667 ms  2.206 ms\n"+
 "6  2001:db8:97c:2c:100::  12.416 ms 2001:db8:97c:0:c00::  9.954 ms\n"+
 "7  2001:db8:1f:5ff0::6  8.268 ms 2001:db8:1f:5804:38::2  3.046 ms\n"+
-"9  2001:db8::1:21:31:6302  26.896 ms 2001:db8::1:21:31:5322  25.851 ms\n"+
+"9  2001:db8::1:21:31:6302  126.896 ms 2001:db8::1:21:31:5322  125.851 ms\n"+
 "10  2001:db8:18:10:410f::89  36.266 ms 2001:db8:18:10:4104::89  30.076 ms\n"+
 "12  * * *\n13  * * *\n"+
 "15  2001:db8:0:0:1000:4212::1  55.531 ms\n"+
 "20  2001:db8:100b:c700:b479:3172:2cbc:e6e4  31.208 ms";
-
-$("#run").onclick=run;
-$("#sample").onclick=()=>{$("#raw").value=SAMPLE;$("#status").textContent="已载入示例，点击解析";};
+$("#sample").onclick=()=>{$("#raw").value=SAMPLE;$("#status").textContent="已载入示例，点击解析路径";$("#status").className="status";};
 $("#clear").onclick=()=>{$("#raw").value="";$("#status").textContent="";};
 
-const tabs={paste:$("#tab-paste"),target:$("#tab-target")};
-function switchTab(k){
-  for(const [n,b] of Object.entries(tabs))b.setAttribute("aria-selected",String(n===k));
-  $("#panel-paste").hidden=k!=="paste";$("#panel-target").hidden=k!=="target";
-}
-tabs.paste.onclick=()=>switchTab("paste");
-tabs.target.onclick=()=>switchTab("target");
+const tabs={live:$("#tab-live"),paste:$("#tab-paste")};
+function switchTab(k){for(const [n,b] of Object.entries(tabs))b.setAttribute("aria-selected",String(n===k));
+  $("#pane-live").hidden=k!=="live";$("#pane-paste").hidden=k!=="paste";}
+tabs.live.onclick=()=>switchTab("live");tabs.paste.onclick=()=>switchTab("paste");
+$("#multiNode").onclick=()=>{const t=$("#target").value.trim();window.open("https://www.tcping.cn/traceroute/"+encodeURIComponent(t||"example.com"),"_blank");};
 
-document.querySelectorAll("[data-os]").forEach(b=>b.onclick=()=>{
-  const t=$("#target").value.trim()||"目标";
-  const cmd=b.dataset.os==="win"?`tracert -d ${t}`:`traceroute -T -p 443 -n ${t}`;
-  $("#cmdout").hidden=false;$("#cmdtext").textContent=cmd;
-});
-$("#copy").onclick=async()=>{
-  try{await navigator.clipboard.writeText($("#cmdtext").textContent);$("#copy").textContent="已复制";
-    setTimeout(()=>$("#copy").textContent="复制",1500);}catch(e){$("#copy").textContent="请手动复制";}
-};
+checkService();
 </script>
 </body>
 </html>

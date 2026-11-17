@@ -158,9 +158,10 @@ def parse_hops(text):
             except ValueError:
                 pass
             m = re.fullmatch(r"<?(\d+(?:\.\d+)?)", t)
-            if m and i + 1 < len(toks) and toks[i + 1].lower() == "ms":
+            if m and i + 1 < len(toks) and toks[i + 1].lower() in ("ms", "毫秒"):
                 lat.append(float(m.group(1)))
-        if ips or lat:
+        # 保留无响应跳（全 * * *），否则丢包率统计会失真
+        if hop_no is not None or ips or lat:
             hops.append({"hop": hop_no, "ips": ips, "lat": lat})
     return hops
 
